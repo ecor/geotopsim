@@ -17,15 +17,21 @@ library(reshape2)
 
 #				'/home/ecor/Dropbox/R-packages/geotopsim/R/SoilWaterStorage.R' )
 
-loadDataFromPackage <- TRUE
+loadDataFromPackage <- FALSE
 
 wpath_pkg <- "/home/ecor/Dropbox/R-packages/geotopsim/inst"
 wpath_data <- "/home/ecor/Dropbox/R-packages/geotopsim/data"
 wpath_inputdata <- paste(wpath_pkg,"processing_geotop_simulation/inputdata",sep="/")
 wpath <- "/home/ecor/Dropbox/R-packages/geotopsim_simulations/geotop_simulation" ######		paste(wpath_pkg,"geotop_simulation",sep="/")
-file.output.csv <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.surslab.output.csv",sep="/")
+file.output.csv <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.superslab.output.csv",sep="/")
 file.proofilepsiplot <- paste(wpath_pkg,"processing_geotop_simulation/output/psi.png",sep="/")
 file.proofilethetaplot <- paste(wpath_pkg,"processing_geotop_simulation/output/theta.png",sep="/")
+##
+file.nctheta <-  paste(wpath_pkg,"processing_geotop_simulation/output/geotop.theta.nc",sep="/")
+file.ncpsi <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.soilwaterpressure.nc",sep="/")
+file.nchsup <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.surfacewater.nc",sep="/")
+##
+
 
 paramPrefix <- "Header"
 inpts.file <- "geotop.inpts"
@@ -96,13 +102,13 @@ qpoints <- c(0.5,8,40) ##Discharge	at	outlet	and	downstream	end	of	slab1	and	2
 names(qpoints) <- c("outlet","slab1","slab2")
 
 
-outputCsv <- data.frame(time=(1:time_duration)*3600,geotop_surface_water=NA,
-		geotop_soilwater=NA,
-		geotop_unsat_soilwater=NA, 
-		geotop_groundwt_soilwater=NA
+outputCsv <- data.frame(time=(1:time_duration)*3600,geotop_surface_water_m2=NA,
+		geotop_soilwater_m2=NA,
+		geotop_unsat_soilwater_m2=NA, 
+		geotop_groundwt_soilwater_m2=NA
 		)
 
-outputCsv[,c(paste("geotop_qsub",names(qpoints),sep="_"),paste("geotop_qsup",names(qpoints),sep="_"))] <- NA
+outputCsv[,c(paste("geotop_qsub_m2persec",names(qpoints),sep="_"),paste("geotop_qsup_m2persec",names(qpoints),sep="_"))] <- NA
 
 ###outputCsv <- outputCsv[,names_v]
 for (t in 1:time_duration) {
@@ -124,13 +130,13 @@ for (t in 1:time_duration) {
 	
 	
 
-	outputCsv[t,"geotop_soilwater"]<- sum(xyFrom2PointLine(r=WaterVolume,points=transect)$value001,na.rm=TRUE)*dx
-	outputCsv[t,"geotop_groundwt_soilwater"]<- sum(xyFrom2PointLine(r=satWaterVolume,points=transect)$value001,na.rm=TRUE)*dx
-	outputCsv[t,"geotop_unsat_soilwater"]<- sum(xyFrom2PointLine(r=unsatWaterVolume,points=transect)$value001,na.rm=TRUE)*dx
-	outputCsv[t,"geotop_surface_water"]<- sum(xyFrom2PointLine(r=hsup[[t]]/1000,points=transect)$value001,na.rm=TRUE)*dx
+	outputCsv[t,"geotop_soilwater_m2"]<- sum(xyFrom2PointLine(r=WaterVolume,points=transect)$value001,na.rm=TRUE)*dx
+	outputCsv[t,"geotop_groundwt_soilwater_m2"]<- sum(xyFrom2PointLine(r=satWaterVolume,points=transect)$value001,na.rm=TRUE)*dx
+	outputCsv[t,"geotop_unsat_soilwater_m2"]<- sum(xyFrom2PointLine(r=unsatWaterVolume,points=transect)$value001,na.rm=TRUE)*dx
+	outputCsv[t,"geotop_surface_water_m2"]<- sum(xyFrom2PointLine(r=hsup[[t]]/1000,points=transect)$value001,na.rm=TRUE)*dx
 	
-	outputCsv[t,paste("geotop_qsub",qpoints_xy$names,sep="_")] <- qdischarge_sub[qpoints_xy$icell]
-	outputCsv[t,paste("geotop_qsup",qpoints_xy$names,sep="_")] <- qdischarge_sup[qpoints_xy$icell]
+	outputCsv[t,paste("geotop_qsub_m2persec",qpoints_xy$names,sep="_")] <- qdischarge_sub[qpoints_xy$icell]
+	outputCsv[t,paste("geotop_qsup_m2persec",qpoints_xy$names,sep="_")] <- qdischarge_sup[qpoints_xy$icell]
 	 
 	
 	
@@ -165,11 +171,12 @@ for (i in 2:length(z)) {
 	
 	z[i] <- z[i-1]+(dz[i]+dz[i-1])/2
 }
-
+cos_angle <- unique(cos(SlopeMap/180*pi))[1]
+z_v <- z/cos_angle
 ## PSI PROFILE 
 
 profiles <- as.data.frame(lapply(X=psi[names(times)],FUN=SoilVariableProfile,points=points[,c("x","y")],names=as.character(points$id)))
-profiles$depth <- z
+profiles$depth <- z_v
 profiles_m <- melt(profiles,id="depth")
 profiles_m$time <- sapply(X=str_split(profiles_m$variable,"[.]"),FUN=function(x){x[1]})
 profiles_m$point <- sapply(X=str_split(profiles_m$variable,"[.]"),FUN=function(x){x[2]})
@@ -193,6 +200,35 @@ ggsave(file.proofilethetaplot,gtheta)
 
 
 
-### ADDED 
+### NetCDF for soil water potential pressure and soil water content 
+##z*(1+unique(sin(SlopeMap*))^2)^0.5
+
+#file.nctheta <-  paste(wpath_pkg,"processing_geotop_simulation/output/theta.nc",sep="/")
+#file.ncpsi
 
 
+##ncpsifile <- 
+
+		
+## nc <- buildnetCDF(psi,filename=file.ncpsi)
+## 
+
+times <- names(psi)
+times <- str_replace(times,"time","")
+times <- str_replace(times,"hr","")
+times <- as.numeric(times)
+times <- times*3600 ## FROM hours to seconds 
+
+
+hsup <- lapply(X=hsup,FUN=brick)
+hsup <- lapply(X=hsup,FUN=function(x,u){x*u},u=unit_geotop)
+
+
+ncpsi <- buildnetCDF(psi,filename=file.ncpsi,time=times,depth=z_v,name="SoilWaterPressureHead",longname="Soil Water Pressure Head",units_Time="seconds")
+nctheta <- buildnetCDF(theta,filename=file.nctheta,time=times,depth=z_v,name="SWC",longname="Soil Water Content",units="dimensionless",units_Time="second")
+nchsup <- buildnetCDF(hsup,filename=file.nchsup,time=times,,name="WaterDepth",longname="Surface Water Depth",units="meter",units_Time="second")
+
+
+nc_close(ncpsi)
+nc_close(nctheta)
+nc_close(nchsup)
