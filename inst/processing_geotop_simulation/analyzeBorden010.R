@@ -111,7 +111,8 @@ names(qpoints) <- c("outlet")
 outputCsv <- data.frame(time=as.numeric(time_duration_when-time_duration_when[1]+dtmap),geotop_surface_water=NA,
 		geotop_soilwater=NA,
 		geotop_unsat_soilwater=NA, 
-		geotop_groundwt_soilwater=NA
+		geotop_groundwt_soilwater=NA,
+		geotop_topsoilmoisture_m2=NA
 		)
 
 outputCsv[,c("geotop_qsub_outlet","geotop_qsup_outlet")] <- NA
@@ -125,7 +126,7 @@ for (t in 1:length(time_duration_when)) {
 	unsatWaterVolume <- SoilWaterStorage(theta[[t]],psi[[t]],layer=dz,comparison="<",psi_thres=0,fun=sum)
 	satWaterVolume <- SoilWaterStorage(theta[[t]],psi[[t]],layer=dz,comparison=">=",psi_thres=0,fun=sum)
 	WaterVolume <- SoilWaterStorage(theta[[t]],NULL,layer=dz,fun=sum) 
-
+	TopSoilMoisture <- theta[[t]][[1]]
 	## qdischarge_sub <- LateralSubsurfaceDischarge(psi[[t]],wpath=wpath,output.discharge=TRUE)$discharge
 	
 	qdischarge_sup <- LateralSurfaceDischarge(hsup[[t]],wpath=wpath,output.discharge=TRUE)
@@ -142,8 +143,8 @@ for (t in 1:length(time_duration_when)) {
 	outputCsv[t,"geotop_groundwt_soilwater"]<-  volumetot(satWaterVolume) ##sum(xyFrom2PointLine(r=satWaterVolume,points=transect)$value001,na.rm=TRUE)*dx
 	outputCsv[t,"geotop_unsat_soilwater"]<- volumetot(unsatWaterVolume) ##sum(xyFrom2PointLine(r=unsatWaterVolume,points=transect)$value001,na.rm=TRUE)*dx
 	outputCsv[t,"geotop_surface_water"]<- volumetot(hsup[[t]]*unit_geotop) ##sum(xyFrom2PointLine(r=hsup[[t]]/1000,points=transect)$value001,na.rm=TRUE)*dx
-	
-	outputCsv[t,paste("geotop_qsup_outlet",sep="_")] <- qdischarge_sup[NetMap==1]
+	outputCsv[t,"geotop_topsoilmoisture_m2"]<-  volumetot(TopSoilMoisture) ##sum(xyFrom2PointLine(r=TopSoilMoisture,points=transect)$value001,na.rm=TRUE)*dx
+    outputCsv[t,paste("geotop_qsup_outlet",sep="_")] <- qdischarge_sup[NetMap==1]
 ##	outputCsv[t,paste("geotop_qsub_outlet",sep="_")] <- qdischarge_sub[NetMap==1]
 	 
 	

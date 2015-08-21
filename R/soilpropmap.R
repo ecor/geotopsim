@@ -213,7 +213,7 @@ PropertyMap <- function(x,map="LandUseMapFile",...) {
 			
 			mapv <- sort(unique(as.vector(map)))
 			
-			if (!indentical(x,mapv)) {
+			if (!identical(x,mapv)) {
 				
 				message <- "PropertyMap: inconsistency between x and map!"
 				str(x)

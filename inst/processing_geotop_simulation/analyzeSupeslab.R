@@ -105,7 +105,8 @@ names(qpoints) <- c("outlet","slab1","slab2")
 outputCsv <- data.frame(time=(1:time_duration)*3600,geotop_surface_water_m2=NA,
 		geotop_soilwater_m2=NA,
 		geotop_unsat_soilwater_m2=NA, 
-		geotop_groundwt_soilwater_m2=NA
+		geotop_groundwt_soilwater_m2=NA,
+		geotop_topsoilmoisture_m=NA
 		)
 
 outputCsv[,c(paste("geotop_qsub_m2persec",names(qpoints),sep="_"),paste("geotop_qsup_m2persec",names(qpoints),sep="_"))] <- NA
@@ -117,7 +118,8 @@ for (t in 1:time_duration) {
 	unsatWaterVolume <- SoilWaterStorage(theta[[t]],psi[[t]],layer=dz,comparison="<",psi_thres=0,fun=sum)
 	satWaterVolume <- SoilWaterStorage(theta[[t]],psi[[t]],layer=dz,comparison=">=",psi_thres=0,fun=sum)
 	WaterVolume <- SoilWaterStorage(theta[[t]],NULL,layer=dz,fun=sum) 
-
+	TopSoilMoisture <- theta[[t]][[1]]
+	
 	qdischarge_sub <- LateralSubsurfaceDischarge(psi[[t]],wpath=wpath,output.discharge=TRUE)$discharge
 	
 	qdischarge_sup <- LateralSurfaceDischarge(hsup[[t]],wpath=wpath,output.discharge=TRUE)
@@ -134,6 +136,8 @@ for (t in 1:time_duration) {
 	outputCsv[t,"geotop_groundwt_soilwater_m2"]<- sum(xyFrom2PointLine(r=satWaterVolume,points=transect)$value001,na.rm=TRUE)*dx
 	outputCsv[t,"geotop_unsat_soilwater_m2"]<- sum(xyFrom2PointLine(r=unsatWaterVolume,points=transect)$value001,na.rm=TRUE)*dx
 	outputCsv[t,"geotop_surface_water_m2"]<- sum(xyFrom2PointLine(r=hsup[[t]]/1000,points=transect)$value001,na.rm=TRUE)*dx
+	
+	outputCsv[t,"geotop_topsoilmoisture_m"]<- sum(xyFrom2PointLine(r=TopSoilMoisture,points=transect)$value001,na.rm=TRUE)*dx
 	
 	outputCsv[t,paste("geotop_qsub_m2persec",qpoints_xy$names,sep="_")] <- qdischarge_sub[qpoints_xy$icell]
 	outputCsv[t,paste("geotop_qsup_m2persec",qpoints_xy$names,sep="_")] <- qdischarge_sup[qpoints_xy$icell]
@@ -203,15 +207,6 @@ ggsave(file.proofilethetaplot,gtheta)
 ### NetCDF for soil water potential pressure and soil water content 
 ##z*(1+unique(sin(SlopeMap*))^2)^0.5
 
-#file.nctheta <-  paste(wpath_pkg,"processing_geotop_simulation/output/theta.nc",sep="/")
-#file.ncpsi
-
-
-##ncpsifile <- 
-
-		
-## nc <- buildnetCDF(psi,filename=file.ncpsi)
-## 
 
 times <- names(psi)
 times <- str_replace(times,"time","")
