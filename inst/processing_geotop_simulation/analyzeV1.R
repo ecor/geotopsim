@@ -23,16 +23,20 @@ wpath_pkg <- "/home/ecor/Dropbox/R-packages/geotopsim/inst"
 wpath_data <- "/home/ecor/Dropbox/R-packages/geotopsim/data"
 wpath_inputdata <- paste(wpath_pkg,"processing_geotop_simulation/inputdata",sep="/")
 wpath <- '/home/ecor/Dropbox/R-packages/geotopsim_simulations/Vc_SC/Vc_SC1_001' 
+wpath_outputdata <- paste(wpath_pkg,"processing_geotop_simulation/output",sep="/")
+wpath_outputdata <- "/home/ecor/Dropbox/Public/geotop_intercomparison/Vc_Sc1"
 
 
+
+if (!file.exists(wpath_outputdata)) dir.create(wpath_outputdata,recursive=TRUE)
 
 #"/home/ecor/Dropbox/R-packages/geotopsim_simulations/geotop_simulation" ######		paste(wpath_pkg,"geotop_simulation",sep="/")
-file.output.csv <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.Vc_Sc1.output.csv",sep="/")
+file.output.csv <- paste(wpath_outputdata,"geotop.Vc_Sc1.output.csv",sep="/")
 ##file.proofilethetaplot <- paste(wpath_pkg,"processing_geotop_simulation/output/theta.png",sep="/")
 ##
-file.nctheta <-  paste(wpath_pkg,"processing_geotop_simulation/output/geotop.theta.V1.nc",sep="/")
-file.ncpsi <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.soilwaterpressure.V1.nc",sep="/")
-file.nchsup <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.surfacewater.V1.nc",sep="/")
+file.nctheta <-  paste(wpath_outputdata,"geotop.theta.Vc_Sc1.nc",sep="/")
+file.ncpsi <- paste(wpath_outputdata,"geotop.soilwaterpressure.Vc_Sc1.nc",sep="/")
+file.nchsup <- paste(wpath_outputdata,"geotop.surfacewater.Vc_Sc1.nc",sep="/")
 ##
 
 

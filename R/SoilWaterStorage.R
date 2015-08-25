@@ -12,6 +12,7 @@ NULL
 #' @param na.rm a logical value for \code{fun} indicating whether NA values should be stripped before the computation proceeds.
 #' @param comparison comparison operator for \code{psi} .See \code{\link{Comparison}}. Default is the first element of \code{c("<",">","<=",">=","==","!=")}
 #' @param indices see \code{\link{stackApply}}
+#' @param bedrock.depth map of deprock depth. If it is not \code{NULL}, \code{theta} cells under bedrock are not considered.  
 #' @param ... further aguments for \code{\link{stackApply}}
 #' @export
 #' @import raster
@@ -31,7 +32,7 @@ NULL
 #' 
 #' 
 #' 
-SoilWaterStorage <- function(theta,psi,layers=1,fun=sum,na.rm=TRUE,psi_thres=0,comparison=c("<",">","<=",">=","==","!="),indices=1,...) {
+SoilWaterStorage <- function(theta,psi,layers=1,fun=sum,na.rm=TRUE,psi_thres=0,comparison=c("<",">","<=",">=","==","!="),indices=1,bedrock.depth=NULL,...) {
 	
 	if (!is.null(psi)) {
 		
@@ -45,7 +46,13 @@ SoilWaterStorage <- function(theta,psi,layers=1,fun=sum,na.rm=TRUE,psi_thres=0,c
 	}
 	
 	mask <- theta[[1]]*0+1
+	print("BM:")
+	print(bedrock.depth)
+	if (!is.null(bedrock.depth)) bedrock.depth <- mask*bedrock.depth
+	print(bedrock.depth)
+	
 	print(length(layers))
+	print(layers)
 	print(nlayers(theta))
 	if ((length(layers)>1) & (length(layers)!=nlayers(theta))) {
 		
@@ -57,24 +64,58 @@ SoilWaterStorage <- function(theta,psi,layers=1,fun=sum,na.rm=TRUE,psi_thres=0,c
 		 warning("Layer not set currectly. Assingned equal to 1!!!")	
 		 layer <- array(1,nlayers(theta))
 
-	 } else {
+	 } else if (length(layers)==1) {
 	
 		 layers <- rep(layers[1],nlayers(theta))
 	}
-
-	theta <- theta*layers
-	
+	print(layers)
+	vtheta <- theta*layers
+	theta <- vtheta
 #	s <- stack(theta,psi)
 	
 	if (!is.null(psi)) {
 		
 		print(comparison)
 		psilog <- do.call(what=comparison[1],args=list(psi,psi_thres))
-		print(psilog)
+		#print(psilog)
 		##ipsilogfalse <- which(raster::as.vector(psilog==0))
 		psilog[psilog==0] <- NA
 		theta <- theta*psilog
 		na.rm  <- TRUE
+		
+		
+	}
+	
+	
+	if (!is.null(bedrock.depth)) {
+		print("bedrock map:")
+		print(bedrock.depth)
+		issoil <- theta*0+1
+		
+		
+		depth <- layers 
+		for ( i in 2:length(depth)) {
+			
+			depth[i] <- depth[i-1]+layers[i]
+			issoil[[i]] <- bedrock.depth>=depth[i]
+			
+			
+			
+		}
+		
+		print(issoil)
+		issoil <- issoil*mask
+		
+		
+		
+		theta[issoil==0] <- NA
+		theta <- theta*issoil 
+		
+		
+		
+		
+		
+		
 		
 		
 	}

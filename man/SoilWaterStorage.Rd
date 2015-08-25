@@ -6,7 +6,7 @@
 \usage{
 SoilWaterStorage(theta, psi, layers = 1, fun = sum, na.rm = TRUE,
   psi_thres = 0, comparison = c("<", ">", "<=", ">=", "==", "!="),
-  indices = 1, ...)
+  indices = 1, bedrock.depth = NULL, ...)
 }
 \arguments{
 \item{theta}{soil water content \code{RasterBrick-class} object}
@@ -24,6 +24,8 @@ SoilWaterStorage(theta, psi, layers = 1, fun = sum, na.rm = TRUE,
 \item{comparison}{comparison operator for \code{psi} .See \code{\link{Comparison}}. Default is the first element of \code{c("<",">","<=",">=","==","!=")}}
 
 \item{indices}{see \code{\link{stackApply}}}
+
+\item{bedrock.depth}{map of deprock depth. If it is not \code{NULL}, \code{theta} cells under bedrock are not considered.}
 
 \item{...}{further aguments for \code{\link{stackApply}}}
 }

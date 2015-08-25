@@ -26,17 +26,20 @@ wpath <- '/home/ecor/Dropbox/R-packages/geotopsim_simulations/Borden/Borden05m_0
 
 
 #"/home/ecor/Dropbox/R-packages/geotopsim_simulations/geotop_simulation" ######		paste(wpath_pkg,"geotop_simulation",sep="/")
-file.output.csv <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.borden005.output.csv",sep="/")
+file.output.csv <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.borden005.output_wb.csv",sep="/")
 ##file.proofilethetaplot <- paste(wpath_pkg,"processing_geotop_simulation/output/theta.png",sep="/")
+
 
 paramPrefix <- "Header"
 inpts.file <- "geotop.inpts"
 tz <- "GMT"
-
+unit_geotop <- 0.001 # millimeters!
 DemMap <- get.geotop.inpts.keyword.value("DemFile",wpath=wpath,inpts.file=inpts.file,raster=TRUE)
 SlopeMap <- get.geotop.inpts.keyword.value("SlopeMapFile",wpath=wpath,inpts.file=inpts.file,raster=TRUE)
 SoilMap <- get.geotop.inpts.keyword.value("SoilMapFile",wpath=wpath,inpts.file=inpts.file,raster=TRUE)
 NetMap <- get.geotop.inpts.keyword.value("RiverNetwork",wpath=wpath,inpts.file=inpts.file,raster=TRUE)
+BedrockDepthMap <- get.geotop.inpts.keyword.value("BedrockDepthMapFile",wpath=wpath,inpts.file=inpts.file,raster=TRUE)
+
 if (is.null(SoilMap)) {
 	
 	soillevel=1
@@ -67,7 +70,7 @@ time_duration <- 2  # Expressed in hours
 dtmap <- get.geotop.inpts.keyword.value("OutputSoilMaps",numeric=TRUE,wpath=wpath,inpts.file=inpts.file)
 
 time_duration_when <- start+seq(from=0,to=time_duration*3600,by=dtmap*3600)   
-
+time_duration_when <- time_duration_when[-1]
 #(1:time_duration)*3600
 
 
@@ -101,14 +104,18 @@ if (loadDataFromPackage==TRUE) {
 #################### PREPARE CSV 
 
 t <- 5
-dz <- layer/1000  ## 50 millimiters layer depth ##transformed from millimiters to meters
+dz <- layer*unit_geotop  
+BedrockDepthMapm <- BedrockDepthMap*unit_geotop 
+
+
+## 50 millimiters layer depth ##transformed from millimiters to meters
 dx <- xres(theta[[1]])
 
 qpoints <- 0 ##Discharge	at	outlet	and	downstream	end	of	slab1	and	2	
 names(qpoints) <- c("outlet")
 
 
-outputCsv <- data.frame(time=as.numeric(time_duration_when-time_duration_when[1]+dtmap),geotop_surface_water=NA,
+outputCsv <- data.frame(time=as.numeric(time_duration_when-start,units="secs"),geotop_surface_water=NA,
 		geotop_soilwater=NA,
 		geotop_unsat_soilwater=NA, 
 		geotop_groundwt_soilwater=NA,
@@ -123,9 +130,9 @@ unit_geotop <- 0.001
 for (t in 1:length(time_duration_when)) {
 	
 ##	 dz is expressed in meters!!
-	unsatWaterVolume <- SoilWaterStorage(theta[[t]],psi[[t]],layer=dz,comparison="<",psi_thres=0,fun=sum)
-	satWaterVolume <- SoilWaterStorage(theta[[t]],psi[[t]],layer=dz,comparison=">=",psi_thres=0,fun=sum)
-	WaterVolume <- SoilWaterStorage(theta[[t]],NULL,layer=dz,fun=sum) 
+	unsatWaterVolume <- SoilWaterStorage(theta[[t]],psi[[t]],layer=dz,comparison="<",psi_thres=0,fun=sum,bedrock.depth=BedrockDepthMapm)
+	satWaterVolume <- SoilWaterStorage(theta[[t]],psi[[t]],layer=dz,comparison=">=",psi_thres=0,fun=sum,bedrock.depth=BedrockDepthMapm)
+	WaterVolume <- SoilWaterStorage(theta[[t]],NULL,layer=dz,fun=sum,bedrock.depth=BedrockDepthMapm) 
 	TopSoilMoisture <- theta[[t]][[1]]
 	## qdischarge_sub <- LateralSubsurfaceDischarge(psi[[t]],wpath=wpath,output.discharge=TRUE)$discharge
 	

@@ -5,8 +5,8 @@ Title: TO DO
 Type: Package
 Author: Emanuele Cordano,...
 Description: TO DO
-Version: 0.1.3
-Date: 2015-08-17
+Version: 0.1.4
+Date: 2015-08-25q()
 Repository: CRAN
 Depends:
     R (>= 2.10),geotopbricks,soilwater,ncdf4
