@@ -32,6 +32,7 @@ cran_pkg_dir <- paste(cran_pkg_path,pkg_name,sep="/")
 
 roxygenize(pkg_dir,clean=TRUE)
 
+
 #roxygen.dir=pkg_dir copy.package=FALSE,unlink.target=FALSE
 
 ## installation

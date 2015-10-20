@@ -111,7 +111,7 @@ buildnetCDF <- function(psi,filename="/home/ecor/psi.nc",CRSdefault="+ellps=WGS8
 	}
 	nc_close(nc)
 	
-	file.remove(filename_temp)https://mail.google.com/mail/
+	file.remove(filename_temp)
 	
 	
 	return(out)

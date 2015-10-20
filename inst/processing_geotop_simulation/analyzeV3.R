@@ -22,9 +22,9 @@ loadDataFromPackage <- FALSE
 wpath_pkg <- "/home/ecor/Dropbox/R-packages/geotopsim/inst"
 wpath_data <- "/home/ecor/Dropbox/R-packages/geotopsim/data"
 wpath_inputdata <- paste(wpath_pkg,"processing_geotop_simulation/inputdata",sep="/")
-wpath <- '/home/ecor/Dropbox/R-packages/geotopsim_simulations/Vc_SC/Vc_SC3_001' 
-wpath_outputdata <- paste(wpath_pkg,"processing_geotop_simulation/output",sep="/")
-wpath_outputdata <- "/home/ecor/Dropbox/Public/geotop_intercomparison/Vc_SC3"
+wpath <- '/home/ecor/Dropbox/R-packages/geotopsim_simulations/Vc_SC/Vc_SC3_002' 
+#wpath_outputdata <- paste(wpath_pkg,"processing_geotop_simulation/output",sep="/")
+wpath_outputdata <- "/home/ecor/Dropbox/Public/geotop_intercomparison/Vc_SC3_002"
 
 
 
@@ -33,6 +33,11 @@ if (!file.exists(wpath_outputdata)) dir.create(wpath_outputdata,recursive=TRUE)
 #"/home/ecor/Dropbox/R-packages/geotopsim_simulations/geotop_simulation" ######		paste(wpath_pkg,"geotop_simulation",sep="/")
 file.output.csv <- paste(wpath_outputdata,"geotop.Vc_SC3.output.csv",sep="/")
 ##file.proofilethetaplot <- paste(wpath_pkg,"processing_geotop_simulation/output/theta.png",sep="/")
+file.proofilepsiplot <- paste(wpath_outputdata,"psi_profile.png",sep="/")
+file.proofilethetaplot <- paste(wpath_outputdata,"theta_profile.png",sep="/")
+file.psiprofile <- paste(wpath_outputdata,"psi_profile.csv",sep="/")
+file.thetaprofile <- paste(wpath_outputdata,"ptheta_profile.csv",sep="/")
+file.volumepng <- paste(wpath_outputdata,"volume.png",sep="/")
 ##
 file.nctheta <-  paste(wpath_outputdata,"geotop.theta.Vc_SC3.nc",sep="/")
 file.ncpsi <- paste(wpath_outputdata,"geotop.soilwaterpressure.Vc_SC3.nc",sep="/")
@@ -213,5 +218,94 @@ nc_close(ncpsi)
 nc_close(nctheta)
 nc_close(nchsup)
 
+#
+#Dear All,
+#please provide me with pressure and relative saturation profiles/cross-section for the v-catchment case scenarios 3 and 4 for the following locations and times:
+#		
+#		Locations: at the hillslope outlet at x=55m, y=0m; 
+#in the centre of the channel at x=55m y=50m;  
+#along a line at the surface of the hillslope in the centre of the channel at x=55m from y=0 to 100m
+#Times: 10, 20, 40, 80, 120 hours
+#
+#I received the data (see email below) for the superslab case for the following models: Cast3M, Geoptop, PF. Would be great to have the results of the other models soon to update the manuscript.
+#
+#Thank you,
+#Stefan
+##### SOIL VERTICAL PROFILES 
+
+
+unit_geotop <- 0.001 ### millimeters!
+psi <- lapply(X=psi,FUN=function(x,u){x*u},u=unit_geotop)
+
+xorigin <- 10
+yorigin <- 10 
+
+yp <- c(0.5,50,99.6)+yorigin
+xp <- 55+xorigin
+
+points <- data.frame(x=xp,y=yp,id=sprintf("x%02dm_y%03dm",round(xp-xorigin),round(yp-yorigin)))
+
+times <- c(10,20,40,80,120)*3600
+
+names(psi) <- sprintf("time%05ds",outputCsv$time)
+names(theta) <- names(psi)
+names(times) <- sprintf("time%05ds",times)
+
+dz <- as.numeric(sapply(X=str_split(names(psi[[1]]),"_"),FUN=function(x){x[2]}))
+dz <- dz*unit_geotop
+z <- dz/2.0
+for (i in 2:length(z)) {
+	
+	z[i] <- z[i-1]+(dz[i]+dz[i-1])/2
+}
+##
+#z_v <- z ##/cos_angle
+z_v <- z 
+
+## PSI PROFILE 
+
+profiles <- as.data.frame(lapply(X=psi[names(times)],FUN=SoilVariableProfile,points=points[,c("x","y")],names=as.character(points$id)))
+profiles$depth <- z_v
+profiles_m <- melt(profiles,id="depth")
+profiles_m$time <- sapply(X=str_split(profiles_m$variable,"[.]"),FUN=function(x){x[1]})
+profiles_m$point <- sapply(X=str_split(profiles_m$variable,"[.]"),FUN=function(x){x[2]})
+
+gpsi <- qplot(value,depth,data=profiles_m,geom="path",group=time)+facet_grid(point ~ time,scale="fixed")+scale_y_reverse()+ylab("Depth [m]")+xlab("Soil Water Pressure Head [m]")
+
+ggsave(file.proofilepsiplot,gpsi) 
+## THETA PROFILE 
+
+profiles_th <- as.data.frame(lapply(X=theta[names(times)],FUN=SoilVariableProfile,points=points[,c("x","y")],names=as.character(points$id)))
+profiles_th$depth <- z
+profiles_mth <- melt(profiles_th,id="depth")
+profiles_mth$time <- sapply(X=str_split(profiles_mth$variable,"[.]"),FUN=function(x){x[1]})
+profiles_mth$point <- sapply(X=str_split(profiles_mth$variable,"[.]"),FUN=function(x){x[2]})
+
+gtheta <- qplot(value,depth,data=profiles_mth,geom="path",group=time)+facet_grid(point ~ time,scale="fixed")+scale_y_reverse()+ylab("Depth [m]")+xlab("Soil Water Content")
+
+ggsave(file.proofilethetaplot,gtheta) 
+
+
+
+
+
+write.table(profiles,file.psiprofile,sep=",",row.names=FALSE,quote=FALSE)
+write.table(profiles_th,file.thetaprofile,sep=",",row.names=FALSE,quote=FALSE)
+
+## VOLUME PLOT 
+
+
+outputMelt <- melt(outputCsv,id="time")
+variables <- c("geotop_soilwater","geotop_groundwt_soilwater","geotop_unsat_soilwater","geotop_surface_water")
+outputMeltv <- outputMelt[outputMelt$variable %in% variables,]
+ggv <- ggplot()+geom_line(mapping=aes(x=time,y=value,colour=variable),data=outputMeltv)
+ggv <- ggv+xlab("time [s]")+ylab("volume [m3]")+ggtitle("Volume")
+
+
+
+
+
+###
+ggsave(file.volumepng,ggv) 
 
 

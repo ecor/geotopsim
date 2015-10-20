@@ -23,15 +23,20 @@ wpath_pkg <- "/home/ecor/Dropbox/R-packages/geotopsim/inst"
 wpath_data <- "/home/ecor/Dropbox/R-packages/geotopsim/data"
 wpath_inputdata <- paste(wpath_pkg,"processing_geotop_simulation/inputdata",sep="/")
 wpath <- "/home/ecor/Dropbox/R-packages/geotopsim_simulations/geotop_simulation" ######		paste(wpath_pkg,"geotop_simulation",sep="/")
-file.output.csv <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.superslab.output.csv",sep="/")
-file.proofilepsiplot <- paste(wpath_pkg,"processing_geotop_simulation/output/psi.png",sep="/")
-file.proofilethetaplot <- paste(wpath_pkg,"processing_geotop_simulation/output/theta.png",sep="/")
+wpath_output <- "/home/ecor/ownCloud/giacomo_emanuele_cordano/Intercomparison/Superslab"
+file.output.csv <- paste(wpath_output,"processing_geotop_simulation/output/geotop.superslab.output.csv",sep="/")
+file.proofilepsiplot <- paste(wpath_output,"processing_geotop_simulation/output/psi.png",sep="/")
+file.proofilethetaplot <- paste(wpath_output,"processing_geotop_simulation/output/theta.png",sep="/")
+file.volumepng <- paste(wpath_output,"processing_geotop_simulation/output/volumes_superslaab.png",sep="/")
+file.dischargepng <- paste(wpath_output,"processing_geotop_simulation/output/discharge_superslabs.png",sep="/")
+file.psiprofile <- paste(wpath_output,"processing_geotop_simulation/output/psi_profile.csv",sep="/")
+file.thetaprofile <- paste(wpath_output,"processing_geotop_simulation/output/theta_profile.csv",sep="/")
 ##
-file.nctheta <-  paste(wpath_pkg,"processing_geotop_simulation/output/geotop.theta.nc",sep="/")
-file.ncpsi <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.soilwaterpressure.nc",sep="/")
-file.nchsup <- paste(wpath_pkg,"processing_geotop_simulation/output/geotop.surfacewater.nc",sep="/")
+file.nctheta <-  paste(wpath_output,"processing_geotop_simulation/output/geotop.theta.nc",sep="/")
+file.ncpsi <- paste(wpath_output,"processing_geotop_simulation/output/geotop.soilwaterpressure.nc",sep="/")
+file.nchsup <- paste(wpath_output,"processing_geotop_simulation/output/geotop.surfacewater.nc",sep="/")
 ##
-
+file.daftslab2png <- paste(wpath_output,"processing_geotop_simulation/output/qslab2.png",sep="/")
 
 paramPrefix <- "Header"
 inpts.file <- "geotop.inpts"
@@ -42,9 +47,10 @@ SlopeMap <- get.geotop.inpts.keyword.value("SlopeMapFile",wpath=wpath,inpts.file
 SoilMap <- get.geotop.inpts.keyword.value("SoilMapFile",wpath=wpath,inpts.file=inpts.file,raster=TRUE)
 
 start <-  get.geotop.inpts.keyword.value("InitDateDDMMYYYYhhmm",date=TRUE,wpath=wpath,inpts.file=inpts.file,tz="GMT")
+
 #### Soil Properties
 
-
+dtout <- 3600*get.geotop.inpts.keyword.value("OutputSoilMaps",wpath=wpath,inpts.file=inpts.file,numeric=TRUE)
 DzName <- get.geotop.inpts.keyword.value(paste(paramPrefix,"SoilDz",sep=""),wpath=wpath,inpts.file=inpts.file)
 SoilPar <- get.geotop.inpts.keyword.value("SoilParFile",wpath=wpath,inpts.file=inpts.file,data.frame=TRUE,level=unique(SoilMap))			
 layer <- SoilPar[[1]][,DzName]
@@ -54,7 +60,7 @@ layer <- SoilPar[[1]][,DzName]
 y <- (ymax(DemMap)+ymin(DemMap))/2
 
 ## 
-x <- c(0,8,40,32,41)
+x <-  c(0,8,40,32,41)
 names(x) <- c("Outlet","Slab1","Slab2","A","B")
 
 xy <- data.frame(Name=names(x),x=x,y=y)
@@ -62,10 +68,10 @@ xy <- data.frame(Name=names(x),x=x,y=y)
 xy$cell <- cellFromXY(DemMap,xy[c("x","y")])
 
 time_duration <- 13  # Expressed in hours
+ntimes <- ceiling((time_duration*3600)/dtout)
 
-
-time_duration_when <- start+(1:time_duration)*3600
-
+time_duration_coord <- (1:ntimes)*dtout
+time_duration_when <- start+time_duration_coord
 
 if (loadDataFromPackage==TRUE) { 
 
@@ -98,11 +104,11 @@ t <- 5
 dz <- layer/1000  ## 50 millimiters layer depth ##transformed from millimiters to meters
 dx <- xres(theta[[1]])
 
-qpoints <- c(0.5,8,40) ##Discharge	at	outlet	and	downstream	end	of	slab1	and	2	
+qpoints <- c(0.5,8,41) ##Discharge	at	outlet	and	downstream	end	of	slab1	and	2	
 names(qpoints) <- c("outlet","slab1","slab2")
 
 
-outputCsv <- data.frame(time=(1:time_duration)*3600,geotop_surface_water_m2=NA,
+outputCsv <- data.frame(time=time_duration_coord,geotop_surface_water_m2=NA,
 		geotop_soilwater_m2=NA,
 		geotop_unsat_soilwater_m2=NA, 
 		geotop_groundwt_soilwater_m2=NA,
@@ -110,10 +116,11 @@ outputCsv <- data.frame(time=(1:time_duration)*3600,geotop_surface_water_m2=NA,
 		)
 
 outputCsv[,c(paste("geotop_qsub_m2persec",names(qpoints),sep="_"),paste("geotop_qsup_m2persec",names(qpoints),sep="_"))] <- NA
-
+7.845003e-06
 ###outputCsv <- outputCsv[,names_v]
-for (t in 1:time_duration) {
+for (ti in time_duration_coord) {
 	
+	t <- which(time_duration_coord==ti)
 ##	 dz is expressed in meters!!
 	unsatWaterVolume <- SoilWaterStorage(theta[[t]],psi[[t]],layer=dz,comparison="<",psi_thres=0,fun=sum)
 	satWaterVolume <- SoilWaterStorage(theta[[t]],psi[[t]],layer=dz,comparison=">=",psi_thres=0,fun=sum)
@@ -160,15 +167,17 @@ unit_geotop <- 0.001 ### millimeters!
 psi <- lapply(X=psi,FUN=function(x,u){x*u},u=unit_geotop)
 
 yv <- (ymax(psi[[1]])+ymin(psi[[1]]))/2
-xp <- c(32,41)
-points <- data.frame(x=xp,y=yv,id=sprintf("x%02dm",xp))
+xp <- c(0.5,8.0,32,40,41)
 
-times <- c(1,2,4,8,12)
-names(psi) <- sprintf("time%02dhr",1:length(psi))
+points <- data.frame(x=xp,y=yv,id=sprintf("x%02dm",trunc(xp)))
+
+times <- c(1,1.5,2,3,4,6,9,8,12)*3600
+
+names(psi) <- sprintf("time%05ds",time_duration_coord)
 names(theta) <- names(psi)
-names(times) <- sprintf("time%02dhr",times)
+names(times) <- sprintf("time%05ds",times)
 
-dz <- as.numeric(sapply(X=str_split(names(psi[["time01hr"]]),"_"),FUN=function(x){x[2]}))
+dz <- as.numeric(sapply(X=str_split(names(psi[[1]]),"_"),FUN=function(x){x[2]}))
 dz <- dz*unit_geotop
 z <- dz/2.0
 for (i in 2:length(z)) {
@@ -204,6 +213,11 @@ ggsave(file.proofilethetaplot,gtheta)
 
 
 
+write.table(profiles,file.psiprofile,sep=",",row.names=FALSE,quote=FALSE)
+write.table(profiles_th,file.thetaprofile,sep=",",row.names=FALSE,quote=FALSE)
+
+
+
 ### NetCDF for soil water potential pressure and soil water content 
 ##z*(1+unique(sin(SlopeMap*))^2)^0.5
 
@@ -227,3 +241,46 @@ nchsup <- buildnetCDF(hsup,filename=file.nchsup,time=times,,name="WaterDepth",lo
 nc_close(ncpsi)
 nc_close(nctheta)
 nc_close(nchsup)
+
+
+### SOME PLOTS!! 
+#
+#plot(outputCsv$time,outputCsv$geotop_soilwater_m2,ylim=c(0,30),type="l")
+#lines(outputCsv$time,outputCsv$geotop_groundwt_soilwater_m2,lty=2)
+#lines(outputCsv$time,outputCsv$geotop_unsat_soilwater_m2,lty=3)
+#lines(outputCsv$time,outputCsv$geotop_unsat_soilwater_m2,lty=3)
+#lines(outputCsv$time,outputCsv$geotop_surface_water_m2,lty=4)
+#
+#g <- ggplot()+geom_line(mapping=aes(time,geotop_soilwater_m2),data=outputCsv,colour=1)
+#g <- g+geom_line(mapping=aes(time,geotop_groundwt_soilwater_m2),data=outputCsv,colour=2)
+#g <- g+geom_line(mapping=aes(time,geotop_unsat_soilwater_m2),data=outputCsv,colour=3)
+#g <- g+geom_line(mapping=aes(time,geotop_surface_water_m2),data=outputCsv,colour=4)
+#g <- g+guide_legend()
+
+
+outputMelt <- melt(outputCsv,id="time")
+variables <- c("geotop_soilwater_m2","geotop_groundwt_soilwater_m2","geotop_unsat_soilwater_m2","geotop_surface_water_m2")
+outputMeltv <- outputMelt[outputMelt$variable %in% variables,]
+ggv <- ggplot()+geom_line(mapping=aes(x=time,y=value,colour=variable),data=outputMeltv)
+ggv <- ggv+xlab("time [s]")+ylab("volume [m2]")+ggtitle("Volume")
+
+
+
+variablesq <- c("geotop_qsup_m2persec_outlet","geotop_qsup_m2persec_slab1","geotop_qsup_m2persec_slab2")
+outputMeltq <- outputMelt[outputMelt$variable %in% variablesq,]
+ggq <- ggplot()+geom_line(mapping=aes(x=time,y=value,colour=variable),data=outputMeltq)
+ggq <- ggq+xlab("time [s]")+ylab("discharge [m2/s]")+ggtitle("Discharge")
+### http://stackoverflow.com/questions/10349206/add-legend-to-ggplot2-line-plot
+
+#ggsave(file.proofilethetaplot,gtheta) 
+
+
+###
+ggsave(file.volumepng,ggv) 
+ggsave(file.dischargepng,ggq) 
+#####
+png(file.daftslab2png)
+plot(outputCsv$time,outputCsv$geotop_qsup_m2persec_slab2,xlim=c(0,4)*3600,type="l")
+dev.off()
+#######
+
