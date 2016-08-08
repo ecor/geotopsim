@@ -46,7 +46,7 @@ NULL
 #' 
 #' qdischarge_sup <- LateralSurfaceDischarge(hsup=hsupt,wpath=wpath,output.discharge=TRUE)
 #' 
-
+# # <<-
 LateralSubsurfaceDischarge <- function(psi,
 		elevation="DemFile",slope="SlopeMapFile",aspect=NULL,neighbors=8,soilmap="SoilMapFile",soiltypes="SoilParFile",Dz="SoilDz",unitelev=1000,
 		use.soilwater.function=list(fun="khy", ## called function of "soilwater" package

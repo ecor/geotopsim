@@ -23,7 +23,9 @@ wpath_pkg <- "/home/ecor/Dropbox/R-packages/geotopsim/inst"
 wpath_data <- "/home/ecor/Dropbox/R-packages/geotopsim/data"
 wpath_inputdata <- paste(wpath_pkg,"processing_geotop_simulation/inputdata",sep="/")
 wpath <- "/home/ecor/Dropbox/R-packages/geotopsim_simulations/geotop_simulation" ######		paste(wpath_pkg,"geotop_simulation",sep="/")
-wpath_output <- "/home/ecor/ownCloud/giacomo_emanuele_cordano/Intercomparison/Superslab"
+wpath_output <- "/home/ecor/ownCloud/giacomo_emanuele_cordano/Intercomparison/Superslab__20151104"
+wpath_output <- "/home/ecor/Dropbox/Public/geotop_intercomparison/superslab_20151104" 
+
 file.output.csv <- paste(wpath_output,"processing_geotop_simulation/output/geotop.superslab.output.csv",sep="/")
 file.proofilepsiplot <- paste(wpath_output,"processing_geotop_simulation/output/psi.png",sep="/")
 file.proofilethetaplot <- paste(wpath_output,"processing_geotop_simulation/output/theta.png",sep="/")
@@ -36,6 +38,9 @@ file.nctheta <-  paste(wpath_output,"processing_geotop_simulation/output/geotop.
 file.ncpsi <- paste(wpath_output,"processing_geotop_simulation/output/geotop.soilwaterpressure.nc",sep="/")
 file.nchsup <- paste(wpath_output,"processing_geotop_simulation/output/geotop.surfacewater.nc",sep="/")
 ##
+file.datpsi <- paste(wpath_output,"processing_geotop_simulation/output/geotop.soilwaterpressure_%s.dat",sep="/")
+file.dattheta <- paste(wpath_output,"processing_geotop_simulation/output/geotop.theta_%s.dat",sep="/")
+##
 file.daftslab2png <- paste(wpath_output,"processing_geotop_simulation/output/qslab2.png",sep="/")
 
 paramPrefix <- "Header"
@@ -44,6 +49,8 @@ tz <- "GMT"
 
 DemMap <- get.geotop.inpts.keyword.value("DemFile",wpath=wpath,inpts.file=inpts.file,raster=TRUE)
 SlopeMap <- get.geotop.inpts.keyword.value("SlopeMapFile",wpath=wpath,inpts.file=inpts.file,raster=TRUE)
+AspectMap <- DemMap*0+270.0 ###terrain(DemMap,opt='aspect',unit='degrees')  ###get.geotop.inpts.keyword.value("AspectMapFile",wpath=wpath,inpts.file=inpts.file,raster=TRUE)
+
 SoilMap <- get.geotop.inpts.keyword.value("SoilMapFile",wpath=wpath,inpts.file=inpts.file,raster=TRUE)
 
 start <-  get.geotop.inpts.keyword.value("InitDateDDMMYYYYhhmm",date=TRUE,wpath=wpath,inpts.file=inpts.file,tz="GMT")
@@ -60,8 +67,8 @@ layer <- SoilPar[[1]][,DzName]
 y <- (ymax(DemMap)+ymin(DemMap))/2
 
 ## 
-x <-  c(0,8,40,32,41)
-names(x) <- c("Outlet","Slab1","Slab2","A","B")
+x <-  c(0,7,8,40,32,41)
+names(x) <- c("Outlet","Slab1_7m","Slab1_8m","Slab2","A","B")
 
 xy <- data.frame(Name=names(x),x=x,y=y)
 
@@ -104,8 +111,8 @@ t <- 5
 dz <- layer/1000  ## 50 millimiters layer depth ##transformed from millimiters to meters
 dx <- xres(theta[[1]])
 
-qpoints <- c(0.5,8,41) ##Discharge	at	outlet	and	downstream	end	of	slab1	and	2	
-names(qpoints) <- c("outlet","slab1","slab2")
+qpoints <- c(0.5,7,8,41) ##Discharge	at	outlet	and	downstream	end	of	slab1	and	2	
+names(qpoints) <- c("outlet","slab1_7m","slab1_8m","slab2")
 
 
 outputCsv <- data.frame(time=time_duration_coord,geotop_surface_water_m2=NA,
@@ -167,7 +174,7 @@ unit_geotop <- 0.001 ### millimeters!
 psi <- lapply(X=psi,FUN=function(x,u){x*u},u=unit_geotop)
 
 yv <- (ymax(psi[[1]])+ymin(psi[[1]]))/2
-xp <- c(0.5,8.0,32,40,41)
+xp <- c(0.5,7.0,8.0,32,40,41)
 
 points <- data.frame(x=xp,y=yv,id=sprintf("x%02dm",trunc(xp)))
 
@@ -224,9 +231,9 @@ write.table(profiles_th,file.thetaprofile,sep=",",row.names=FALSE,quote=FALSE)
 
 times <- names(psi)
 times <- str_replace(times,"time","")
-times <- str_replace(times,"hr","")
+times <- str_replace(times,"[a-z]","")
 times <- as.numeric(times)
-times <- times*3600 ## FROM hours to seconds 
+###times <- times*3600 ## FROM hours to seconds 
 
 
 hsup <- lapply(X=hsup,FUN=brick)
@@ -284,3 +291,57 @@ plot(outputCsv$time,outputCsv$geotop_qsup_m2persec_slab2,xlim=c(0,4)*3600,type="
 dev.off()
 #######
 
+### 
+#Hi Emanuele,
+#
+#We need two text files (t = 1.5 h and t = 6.0h) with the following structure:
+#		
+#		X Z SW
+#
+#If you did not use a uniform dz I need the complete information on the vertical resolution.
+#
+#Best,
+#Mauro
+
+
+
+
+
+###
+
+time.inv <- c(1.5,6)*3600
+time.inv.s <- paste(time.inv,"s",sep="")
+
+psidat <- builddat(psi,time=times,depth=z_v,elevation=DemMap,slope=0,time.inv=time.inv,unit_z=1)
+thetadat <- builddat(theta,time=times,depth=z_v,elevation=DemMap,slope=0,time.inv=time.inv,unit_z=1)
+ysect <- 5.5 ####psidat$y[(psidat$y-mean(range(psidat$y)))<yres(psi[[1]]),][1]
+
+psidat <-   psidat[psidat$y==ysect,]
+thetadat <- thetadat[thetadat$y==ysect,]
+
+file.datpsi_v <- sprintf(file.datpsi,time.inv.s) ##paste(wpath_output,"processing_geotop_simulation/output/geotop.soilwaterpressure_%s.dat",sep="/")
+file.dattheta_v <- sprintf(file.dattheta,time.inv.s) ##paste(wpath_output,"processing_geotop_simulation/output/geotop.theta_%s.dat",sep="/")
+
+
+for (i in 1:length(file.datpsi_v)) {
+	
+	dfout <- psidat[psidat$time==time.inv[i],c("x","z","value")]
+	write.table(x=dfout,file=file.datpsi_v[i],sep=" ",row.names=FALSE,col.names=FALSE)
+	
+	
+}
+
+
+
+
+for (i in 1:length(file.dattheta_v)) {
+	
+	dfout <- thetadat[thetadat$time==time.inv[i],c("x","z","value")]
+	###dfout <- dfout[order(dfout$z),]
+	
+	dfout$z <- round(dfout$z,digit=4)
+	write.table(x=dfout,file=file.dattheta_v[i],sep=" ",row.names=FALSE,col.names=FALSE)
+	
+	
+}
+###

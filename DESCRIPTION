@@ -1,12 +1,14 @@
 Package: geotopsim
 Maintainer: Emanuele Cordano <emanuele.cordano@gmail.com>
 License: GPL (>= 2)
-Title: TO DO
+Title: Analysis of GEOtop Output Data
 Type: Package
-Author: Emanuele Cordano,...
-Description: TO DO
-Version: 0.1.5
-Date: 2015-09-28
+Author: Emanuele Cordano
+Description: It provides accessory tools for the elaboration of the outputs
+    provided by a GEOtop simulation. In particular, functions for spatial (vertical)
+    aggregation, for local soil profile extractions are present.
+Version: 0.1.6
+Date: 2016-01-10
 Repository: CRAN
 Depends:
     R (>= 2.10),geotopbricks,soilwater,ncdf4
@@ -15,3 +17,4 @@ Imports:
 Suggests:
     soilwater
 URL: xxx
+RoxygenNote: 5.0.1

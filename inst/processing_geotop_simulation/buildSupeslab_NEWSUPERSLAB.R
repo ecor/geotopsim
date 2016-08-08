@@ -50,7 +50,7 @@ soilprop_tmp[,FieldCapacity] <- swc(psi=psi_FC,alpha=alpha,n=n,theta_sat=theta_s
 soilprop_tmp[,WiltingPoint] <- swc(psi=psi_WP,alpha=alpha,n=n,theta_sat=theta_sat,theta_res=theta_res,type_swc="VanGenuchten")
 ###
 
-write.table(soilprop_tmp,paste(wpath_inputdata,"soilprop_NEWSUPERSLAP.txt",sep="/"),sep=",",quote=FALSE,row.names=FALSE) 
+write.table(soilprop_tmp,paste(wpath_inputdata,"soilprop_hillslope.txt",sep="/"),sep=",",quote=FALSE,row.names=FALSE) 
 
 ####
 #
